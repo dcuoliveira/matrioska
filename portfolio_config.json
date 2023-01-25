@@ -1,0 +1,13 @@
+{
+    "sim_years" : 10,
+    "vol_target" : 0.20,
+
+    "subsystems": {
+        "oan": {
+            "lbmom": 0.33,
+            "lsmom": 0.33,
+            "skprm": 0.33
+        }
+    }
+    
+}
