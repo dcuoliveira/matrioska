@@ -1,26 +1,26 @@
 import pandas as pd
-import yfinance as yf
 import matplotlib.pyplot as plt
 import numpy as np
-import datetime as dt
 from tqdm import tqdm
 from pandas.tseries.offsets import BDay
-import pickle
 import os
 
+from src.utils.conn_data import load_pickle, save_pickle
 
 class Cerebro(object):
     def __init__(self,
                  bars: dict,
-                 signals: dict,
                  forecasts: dict,
                  carry: dict,
+                 quotes: dict,
                  groups: dict) -> None:
         self.bars = bars
-        self.signals = signals
         self.forecasts = forecasts
         self.carry = carry
+        self.quotes = quotes
         self.groups = groups
+
+        self.metadata = pd.DataFrame.from_dict(load_pickle(path=os.path.join(os.getcwd(), "src", "data", "inputs", "metadata.pickle")))
 
         if "ALL" in list(groups.keys()):
             self.intruments = groups["ALL"]
@@ -36,8 +36,8 @@ class Cerebro(object):
         vols_list = []
         rets_list = []
         carrys_list = []
-        signals_list = []
         forecasts_list = []
+        quotes_list = []
         for inst in self.intruments:
             tmp_bars = self.bars[inst][[bar_name]].resample(resample_freq).last().ffill()
 
@@ -48,17 +48,22 @@ class Cerebro(object):
             
             tmp_carry = self.carry[inst][[bar_name]].resample(resample_freq).last().ffill()
 
+            covert_currency_name = self.metadata.loc[self.metadata["bkt_code"] == inst]["convert_currency"].iloc[0]
+            tmp_quotes = self.quotes[covert_currency_name][[bar_name]].resample(resample_freq).last().ffill()
+
             bars_list.append(tmp_bars.rename(columns={bar_name: "{} close".format(inst)}))
             vols_list.append(tmp_vols.rename(columns={bar_name: "{} daily ret % vol".format(inst)}))
             rets_list.append(tmp_rets.rename(columns={bar_name: "{} ret%".format(inst)}))
             carrys_list.append(tmp_carry.rename(columns={bar_name: "{} carry".format(inst)}))
             forecasts_list.append(tmp_forecasts.rename(columns={bar_name: "{} forecasts".format(inst)}))
+            quotes_list.append(tmp_quotes.rename(columns={bar_name: "{} quotes".format(covert_currency_name)}))
 
         self.bars_df = pd.concat(bars_list, axis=1)
         self.vols_df = pd.concat(vols_list, axis=1)
         self.rets_df = pd.concat(rets_list, axis=1)
         self.carrys_df = pd.concat(carrys_list, axis=1)
         self.forecasts_df = pd.concat(forecasts_list, axis=1)
+        self.quotes_df = pd.concat(quotes_list, axis=1)
 
     def check_available_instruments(self,
                                     instruments: list,
@@ -93,9 +98,11 @@ class Cerebro(object):
         # standardize dict inputs
         self.standardize_inputs(bar_name=bar_name, vol_window=vol_window, resample_freq=resample_freq)
 
+        # get backtest dates
         backtest_dates = self.forecasts_df.dropna().index
         portfolio_df = pd.DataFrame(index=backtest_dates)
         
+        # begin event driven backtest
         first_day = True
         for t in tqdm(backtest_dates, desc="Running Backtest", total=len(backtest_dates)):
 
@@ -131,8 +138,9 @@ class Cerebro(object):
                     inst_daily_ret_vol = self.vols_df.loc[t, "{} daily ret % vol".format(inst)]
                     forecast = self.forecasts_df.loc[t, "{} forecasts".format(inst)]
 
-                    # invert price to local currency if needed
-                    convert_factor = (1 / price) if inst.split("=")[0][3:] != "USD" else 1
+                    # convert price change to local currency when needed
+                    currency_to_convert = self.metadata.loc[self.metadata["bkt_code"] == inst]["convert_currency"].iloc[0]
+                    convert_factor = self.quotes_df.loc[t, "{} quotes".format(currency_to_convert)]
 
                     # compute position vol. target in the local currency and the instrument daily vol. in the local currency as well
                     position_vol_target = (previous_capital / len(inst)) * vol_target * (1 / np.sqrt(252))
@@ -164,7 +172,8 @@ class Cerebro(object):
                         price_change = self.bars_df.loc[t, "{} close".format(inst)] - self.bars_df.loc[t - BDay(1), "{} close".format(inst)]
 
                         # convert price change to local currency when needed
-                        convert_factor = (1 / self.bars_df.loc[t, "{} close".format(inst)] ) if inst.split("=")[0][3:] != "USD" else 1
+                        currency_to_convert = self.metadata.loc[self.metadata["bkt_code"] == inst]["convert_currency"].iloc[0]
+                        convert_factor = self.quotes_df.loc[t, "{} quotes".format(currency_to_convert)]
                         local_currency_change = price_change * convert_factor
 
                         # compute carry differential and pay/recieve it

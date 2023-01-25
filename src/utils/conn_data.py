@@ -7,5 +7,7 @@ def save_pickle(path: str,
         pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 def load_pickle(path: str):
-    with open(path, 'rb') as handle:
-        b = pickle.load(handle)
+    file = open(path, 'rb')
+    target_dict = pickle.load(file)
+
+    return target_dict
