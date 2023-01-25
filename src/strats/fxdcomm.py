@@ -1,10 +1,9 @@
 import os
-import pickle
 import pandas as pd
 import numpy as np
 
 from src.portfolio_tools.Cerebro import Cerebro
-
+from src.utils.conn_data import load_pickle, save_pickle
 
 fxdcomm_groups = {
 
@@ -14,8 +13,8 @@ fxdcomm_groups = {
 
 if __name__ == "__main__":
 
-    file = open(os.path.join(os.getcwd(), "src", "data", "fxdcomm.pickle"), 'rb')
-    target_dict = pickle.load(file)
+    input_path = os.path.join(os.getcwd(), "src", "data", "inputs", "fxdcomm.pickle")
+    target_dict = load_pickle(input_path)
     bars_info = target_dict["bars"]
     carry_info = target_dict["carry"]
     signals_info = target_dict["signals"]
@@ -43,7 +42,6 @@ if __name__ == "__main__":
         forecasts_info[inst] = tmp_forecasts
 
     cerebro = Cerebro(bars=bars_info,
-                      signals=signals_info,
                       forecasts=forecasts_info,
                       carry=carry_info,
                       groups=fxdcomm_groups)
@@ -55,4 +53,5 @@ if __name__ == "__main__":
                                         resample_freq="B",
                                         capital=1000000)
 
-    fim = 1
+    output_path = os.path.join(os.getcwd(), "src", "data", "outputs", "fxdcomm.pickle")
+    target_dict = save_pickle(object=portfolio_df, path=output_path)
