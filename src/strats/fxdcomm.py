@@ -19,10 +19,6 @@ if __name__ == "__main__":
     carry_info = target_dict["carry"]
     signals_info = target_dict["signals"]
 
-    bars_info["USDBRL"] = bars_info["WDO1"]
-    carry_info["USDBRL"] = carry_info["WDO1"]
-    signals_info["USDBRL"] = signals_info["WDO1"]
-
     forecasts_info = {}
     for inst in list(signals_info.keys()):
         tmp_all_signals = signals_info[inst]
@@ -53,5 +49,6 @@ if __name__ == "__main__":
                                         resample_freq="B",
                                         capital=1000000)
 
+    target_dict["portfolio"] = portfolio_df
     output_path = os.path.join(os.getcwd(), "src", "data", "outputs", "fxdcomm.pickle")
-    target_dict = save_pickle(object=portfolio_df, path=output_path)
+    save_pickle(obj=target_dict, path=output_path)

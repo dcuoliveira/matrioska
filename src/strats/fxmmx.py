@@ -68,4 +68,4 @@ if __name__ == "__main__":
 
     target_dict["portfolio"] = portfolio_df
     output_path = os.path.join(os.getcwd(), "src", "data", "outputs", "fxmmx.pickle")
-    target_dict = save_pickle(obj=target_dict, path=output_path)
+    save_pickle(obj=target_dict, path=output_path)
