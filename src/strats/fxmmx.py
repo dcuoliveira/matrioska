@@ -66,5 +66,6 @@ if __name__ == "__main__":
                                         resample_freq="B",
                                         capital=1000000)
 
-    output_path = os.path.join(os.getcwd(), "src", "data", "outputs", "fxmm.pickle")
-    target_dict = save_pickle(object=portfolio_df, path=output_path)
+    target_dict["portfolio"] = portfolio_df
+    output_path = os.path.join(os.getcwd(), "src", "data", "outputs", "fxmmx.pickle")
+    target_dict = save_pickle(obj=target_dict, path=output_path)
