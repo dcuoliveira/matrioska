@@ -7,17 +7,18 @@ from src.utils.conn_data import load_pickle, save_pickle
 
 fxdcomm_groups = {
 
-    "ALL": ["USDBRL", "USDCLP", "USDZAR", "USDAUD", "USDCAD"]
+    "ALL": ["WDO1", "USDCLP", "USDZAR", "USDAUD", "USDCAD"]
 
 }
 
 if __name__ == "__main__":
 
-    input_path = os.path.join(os.getcwd(), "src", "data", "inputs", "fxdcomm.pickle")
-    target_dict = load_pickle(input_path)
+    input_path = os.path.join(os.getcwd(), "src", "data", "inputs")
+    target_dict = load_pickle(os.path.join(input_path, "fxdcomm.pickle"))
     bars_info = target_dict["bars"]
     carry_info = target_dict["carry"]
     signals_info = target_dict["signals"]
+    quotes_info = load_pickle(os.path.join(input_path, "quotes.pickle"))
 
     forecasts_info = {}
     for inst in list(signals_info.keys()):
@@ -40,6 +41,7 @@ if __name__ == "__main__":
     cerebro = Cerebro(bars=bars_info,
                       forecasts=forecasts_info,
                       carry=carry_info,
+                      quotes=quotes_info,
                       groups=fxdcomm_groups)
 
     portfolio_df = cerebro.run_backtest(instruments=fxdcomm_groups["ALL"],
