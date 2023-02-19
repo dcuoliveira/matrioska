@@ -13,6 +13,8 @@ ratesmm_groups = {
 
 }
 
+sysname = "ratesmmts"
+
 if __name__ == "__main__":
 
     input_path = os.path.join(os.getcwd(), "src", "data", "inputs")
@@ -46,5 +48,5 @@ if __name__ == "__main__":
                                         resample_freq="B",
                                         capital=1000000)
 
-    output_path = os.path.join(os.getcwd(), "src", "data", "outputs", "ratesmmts.pickle")
+    output_path = os.path.join(os.getcwd(), "src", "data", "outputs", "{}.pickle".format(sysname))
     target_dict = save_pickle(object=portfolio_df, path=output_path)

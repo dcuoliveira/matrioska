@@ -11,6 +11,8 @@ fxdcomm_groups = {
 
 }
 
+sysname = "fxdcommts"
+
 if __name__ == "__main__":
 
     input_path = os.path.join(os.getcwd(), "src", "data", "inputs")
@@ -52,5 +54,5 @@ if __name__ == "__main__":
                                         capital=1000000)
 
     target_dict["portfolio"] = portfolio_df
-    output_path = os.path.join(os.getcwd(), "src", "data", "outputs", "fxdcomm.pickle")
+    output_path = os.path.join(os.getcwd(), "src", "data", "outputs", "{}.pickle".format(sysname))
     save_pickle(obj=target_dict, path=output_path)
