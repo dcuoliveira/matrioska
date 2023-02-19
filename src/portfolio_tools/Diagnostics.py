@@ -17,18 +17,30 @@ class Diagnostics(object):
                         sysname):
         
         if "capital ret" in self.portfolio_df.columns:
-            self.portfolio_df["capital ret"] = self.portfolio_df["capital ret"] / 100
             self.portfolio_df["cum ret"] = (1 + self.portfolio_df["capital ret"]).cumprod()
             self.portfolio_df["drawdown"] = self.portfolio_df["cum ret"] / self.portfolio_df["cum ret"].cummax() - 1
             self.sharpe = self.portfolio_df["capital ret"].mean() / self.portfolio_df["capital ret"].std() * np.sqrt(253)
             self.drawdown_max = self.portfolio_df["drawdown"].min() * 100
-            self.vol_ann = self.portfolio_df["capital ret"].std() * np.sqrt(253) * 100 #annualised percent vol
+            self.vol_ann = self.portfolio_df["capital ret"].std() * np.sqrt(252) * 100
 
             self.summary = "{}: \nSharpe: {} \nDrawdown: {}\nVolatility: {}\n".format(
-                sysname, round(self.sharpe, 2), round(self.drawdown_max, 2), round(self.vol_ann, 2)
+                sysname.upper(), round(self.sharpe, 2), round(self.drawdown_max, 1), round(self.vol_ann, 1)
             )    
         else:
             print('There is no columns named "capital ret" in the "portfolio_df" object')
+
+        if "daily pnl" in self.portfolio_df.columns:
+            self.portfolio_df["cum pnl"] = self.portfolio_df["daily pnl"].cumsum()
+            self.portfolio_df["drawdown"] = self.portfolio_df["cum pnl"] / self.portfolio_df["cum pnl"].cummax()
+            self.money_sharpe = self.portfolio_df["daily pnl"].mean() / self.portfolio_df["daily pnl"].std() * np.sqrt(252)
+            self.money_drawdown_max = self.portfolio_df["drawdown"].min() * 100
+            self.money_vol_daily = self.portfolio_df["daily pnl"].std()
+
+            self.money_summary = "{}: \nSharpe: {} \nDrawdown: {}\nDaily Volatility: {}\n".format(
+                sysname.upper(), round(self.money_sharpe, 2), round(self.money_drawdown_max, 1), round(self.money_vol_daily, 1)
+            )    
+        else:
+            print('There is no columns named "daily pnl" in the "portfolio_df" object')
 
     def save_backtests(self,
                        sysname):
@@ -45,27 +57,52 @@ class Diagnostics(object):
             size="8"
         )
         plt.title("Cumulative Returns")
-        plt.savefig("{}/{}_cumret.png".format(OUTPUT_PATH, sysname), bbox_inches="tight")
+        plt.savefig("{path}/{sysname}/{sysname}_cumret.png".format(path=OUTPUT_PATH, sysname=sysname), bbox_inches="tight")
         plt.close()
 
-        self.portfolio_df.to_excel("{}/{}_portfolio_info.xlsx".format(OUTPUT_PATH, sysname)) 
-        save_pickle(path="{}/{}_portfolio_info.obj".format(OUTPUT_PATH, sysname), obj=self.portfolio_df)    
+        self.portfolio_df.to_excel("{path}/{sysname}/{sysname}_portfolio_info.xlsx".format(path=OUTPUT_PATH, sysname=sysname)) 
+        save_pickle(path="{path}/{sysname}/{sysname}_portfolio_info.obj".format(path=OUTPUT_PATH, sysname=sysname), obj=self.portfolio_df)  
+
+        ax = sns.lineplot(data=self.portfolio_df["cum pnl"], linewidth=2.5, palette="deep")
+        ax.annotate(
+            self.money_summary,
+            xy=(0.2, 0.8),
+            xycoords="axes fraction",
+            bbox=dict(boxstyle="round,pad=0.5", fc="white", alpha=0.3),
+            ha="center",
+            va="center",
+            family="serif",
+            size="8"
+        )
+        plt.title("Cumulative pnl")
+        plt.savefig("{path}/{sysname}/{sysname}_cumpnl.png".format(path=OUTPUT_PATH, sysname=sysname), bbox_inches="tight")
+        plt.close()
 
     def save_diagnostics(self,
                          instruments,
                          sysname):
         for inst in instruments:
-            self.portfolio_df["{} w".format(inst)].plot()
+            self.portfolio_df["{} w".format(inst)].fillna(0).plot()
         plt.title("Instrument Weights")
-        plt.savefig("{}/{}_weights.png".format(OUTPUT_PATH, sysname), bbox_inches="tight")
+        plt.savefig("{path}/{sysname}/{sysname}_weights.png".format(path=OUTPUT_PATH, sysname=sysname), bbox_inches="tight")
         plt.close()
 
         self.portfolio_df["leverage"].plot()
         plt.title("Portfolio Leverage")
-        plt.savefig("{}/{}_leverage.png".format(OUTPUT_PATH, sysname), bbox_inches="tight")
+        plt.savefig("{path}/{sysname}/{sysname}_leverage.png".format(path=OUTPUT_PATH, sysname=sysname), bbox_inches="tight")
         plt.close()
 
         plt.scatter(self.portfolio_df.index, self.portfolio_df["capital ret"] * 100)
         plt.title("Daily Return Scatter Plot")
-        plt.savefig("{}/{}_scatter.png".format(OUTPUT_PATH, sysname), bbox_inches="tight")
+        plt.savefig("{path}/{sysname}/{sysname}_scatter.png".format(path=OUTPUT_PATH, sysname=sysname), bbox_inches="tight")
+        plt.close()
+
+        self.portfolio_df["daily pnl"].hist(bins=50)
+        plt.title("Daily PnL")
+        plt.savefig("{path}/{sysname}/{sysname}_hist_daily_pnl.png".format(path=OUTPUT_PATH, sysname=sysname), bbox_inches="tight")
+        plt.close()
+
+        self.portfolio_df["daily pnl"].rolling(window=30).std().plot()
+        plt.title("Daily PnL Vol.")
+        plt.savefig("{path}/{sysname}/{sysname}_daily_pnl_vol.png".format(path=OUTPUT_PATH, sysname=sysname), bbox_inches="tight")
         plt.close()
