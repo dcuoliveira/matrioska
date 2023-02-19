@@ -100,7 +100,8 @@ class Cerebro(object):
                      vol_window: int,
                      vol_target: float,
                      capital: float,
-                     resample_freq: str):
+                     resample_freq: str,
+                     reinvest: bool):
 
         # standardize dict inputs
         self.standardize_inputs(bar_name=bar_name, vol_window=vol_window, resample_freq=resample_freq)
@@ -141,7 +142,7 @@ class Cerebro(object):
                     # separate all inputs needed for the calculations
                     price_change = self.bars_df.loc[t, "{} close".format(inst)] - self.bars_df.loc[t - BDay(1), "{} close".format(inst)]
                     price = self.bars_df.loc[t, "{} close".format(inst)] 
-                    previous_capital = capital # portfolio_df.loc[t - BDay(1), "capital"]
+                    previous_capital = portfolio_df.loc[t - BDay(1), "capital"] if reinvest else capital
                     inst_daily_ret_vol = self.vols_df.loc[t, "{} daily ret % vol".format(inst)]
                     forecast = self.forecasts_df.loc[t, "{} forecasts".format(inst)]
 
@@ -157,7 +158,7 @@ class Cerebro(object):
 
                     # save position units (e.g. cts, notional in USD etc)
                     portfolio_df.loc[t, "{} position units".format(inst)] = position_units
-                    nominal_total += abs(position_units * price * convert_factor)
+                    nominal_total += abs(position_units * price * convert_factor * ct_size)
 
             if not first_day:
 
@@ -167,9 +168,10 @@ class Cerebro(object):
 
                     previous_price = self.bars_df.loc[t - BDay(1), "{} close".format(inst)]
                     previous_convert_factor = self.quotes_df.loc[t - BDay(1), "{} quotes".format(currency_to_convert)]
+                    ct_size = float(self.metadata.loc[self.metadata["bkt_code"] == inst]["ct_size"].iloc[0])
                     position_units = portfolio_df.loc[t, "{} position units".format(inst)]
 
-                    nominal_inst = position_units * previous_price * previous_convert_factor
+                    nominal_inst = position_units * previous_price * previous_convert_factor * ct_size
                     inst_w = nominal_inst / nominal_total if nominal_total != 0 else 0
                     portfolio_df.loc[t, "{} w".format(inst)] = inst_w
 

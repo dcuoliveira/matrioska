@@ -34,7 +34,7 @@ class Diagnostics(object):
             self.portfolio_df["cum pnl"] = self.portfolio_df["daily pnl"].cumsum()
             self.portfolio_df["drawdown"] = self.portfolio_df["cum pnl"] / self.portfolio_df["cum pnl"].cummax()
             self.money_sharpe = self.portfolio_df["daily pnl"].mean() / self.portfolio_df["daily pnl"].std() * np.sqrt(252)
-            self.money_drawdown_max = self.portfolio_df["drawdown"].min()
+            self.money_drawdown_max = self.portfolio_df["drawdown"].replace(np.inf, np.nan).replace(-np.inf, np.nan).min()
             self.money_vol_daily = self.portfolio_df["daily pnl"].std()
 
             self.money_summary = "{}: \nSharpe: {} \nDrawdown: {}\nDaily Volatility: {}\n".format(
@@ -46,7 +46,7 @@ class Diagnostics(object):
     def save_backtests(self,
                        sysname):
 
-        ax = sns.lineplot(data=self.portfolio_df["cum ret"], linewidth=2.5, palette="deep")
+        ax = sns.lineplot(data=self.portfolio_df["cum ret"], linewidth=1.5, palette="deep")
         ax.annotate(
             self.summary,
             xy=(0.2, 0.8),
@@ -64,7 +64,7 @@ class Diagnostics(object):
         self.portfolio_df.to_excel("{path}/{sysname}/{sysname}_portfolio_info.xlsx".format(path=OUTPUT_PATH, sysname=sysname)) 
         save_pickle(path="{path}/{sysname}/{sysname}_portfolio_info.obj".format(path=OUTPUT_PATH, sysname=sysname), obj=self.portfolio_df)  
 
-        ax = sns.lineplot(data=self.portfolio_df["cum pnl"], linewidth=2.5, palette="deep")
+        ax = sns.lineplot(data=self.portfolio_df["cum pnl"], linewidth=1.5, palette="deep")
         ax.annotate(
             self.money_summary,
             xy=(0.2, 0.8),
@@ -119,7 +119,7 @@ class Diagnostics(object):
         plt.savefig("{path}/{sysname}/{sysname}_hist_daily_pnl.png".format(path=OUTPUT_PATH, sysname=sysname), bbox_inches="tight")
         plt.close()
 
-        ax = sns.lineplot(data=self.portfolio_df["daily pnl"].rolling(window=30).std(), linewidth=2.5, palette="deep")
+        ax = sns.lineplot(data=self.portfolio_df["daily pnl"].rolling(window=30).std(), linewidth=1.5, palette="deep")
         ylabels = [usdollars_format(x) for x in ax.get_yticks()]
         ax.set_yticklabels(ylabels)
         plt.title("Daily PnL Vol.")
