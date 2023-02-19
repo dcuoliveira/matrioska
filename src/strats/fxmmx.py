@@ -24,56 +24,63 @@ fxmm_groups = {
 
 sysname = "fxmmx"
 
+USE_LAST_DATA = False
+
 if __name__ == "__main__":
 
-    input_path = os.path.join(os.getcwd(), "src", "data", "inputs")
-    target_dict = load_pickle(os.path.join(input_path, "fxmm.pickle"))
-    bars_info = target_dict["bars"]
-    carry_info = target_dict["carry"]
-    signals_info = target_dict["signals"]
-    quotes_info = load_pickle(os.path.join(input_path, "quotes.pickle"))
+    if not USE_LAST_DATA:
+        input_path = os.path.join(os.getcwd(), "src", "data", "inputs")
+        target_dict = load_pickle(os.path.join(input_path, sysname, "{}.pickle".format(sysname)))
+        bars_info = target_dict["bars"]
+        carry_info = target_dict["carry"]
+        signals_info = target_dict["signals"]
+        quotes_info = load_pickle(os.path.join(input_path, "quotes.pickle"))
 
-    signals = []
-    for inst in fxmm_groups["ALL"]:
-        tmp_signals = pd.DataFrame(signals_info[inst].resample("B").last().ffill().mean(axis=1),
-                                   columns=["{} signals".format(inst)],
-                                   index=signals_info[inst].resample("B").last().ffill().index)
-        signals.append(tmp_signals)
-    signals_df = pd.concat(signals, axis=1)
+        signals = []
+        for inst in fxmm_groups["ALL"]:
+            tmp_signals = pd.DataFrame(signals_info[inst].resample("B").last().ffill().mean(axis=1),
+                                    columns=["{} signals".format(inst)],
+                                    index=signals_info[inst].resample("B").last().ffill().index)
+            signals.append(tmp_signals)
+        signals_df = pd.concat(signals, axis=1)
 
-    forecastsx_df = signals_df.dropna().copy()
+        forecastsx_df = signals_df.dropna().copy()
 
-    low_df = forecastsx_df.apply(lambda x: x.nsmallest(3), axis=1).fillna(0)
-    low_df[low_df != 0] = -1
-    high_df = forecastsx_df.apply(lambda x: x.nlargest(3), axis=1).fillna(0)
-    high_df[high_df != 0] = 1
+        low_df = forecastsx_df.apply(lambda x: x.nsmallest(3), axis=1).fillna(0)
+        low_df[low_df != 0] = -1
+        high_df = forecastsx_df.apply(lambda x: x.nlargest(3), axis=1).fillna(0)
+        high_df[high_df != 0] = 1
 
-    forecasts_df = high_df.add(low_df, axis=1)
-    forecasts_df = forecasts_df[["{} signals".format(inst) for inst in fxmm_groups["ALL"]]]
-    forecasts_df.columns = signals_df.columns
+        forecasts_df = high_df.add(low_df, axis=1)
+        forecasts_df = forecasts_df[["{} signals".format(inst) for inst in fxmm_groups["ALL"]]]
+        forecasts_df.columns = signals_df.columns
 
-    forecasts_info = {}
-    for inst in fxmm_groups["ALL"]:
-        forecasts_info[inst] = forecasts_df[["{} signals".format(inst)]].rename(columns={"{} signals".format(inst): "{} forecasts".format(inst)})
+        forecasts_info = {}
+        for inst in fxmm_groups["ALL"]:
+            forecasts_info[inst] = forecasts_df[["{} signals".format(inst)]].rename(columns={"{} signals".format(inst): "{} forecasts".format(inst)})
 
-    cerebro = Cerebro(bars=bars_info,
-                      forecasts=forecasts_info,
-                      carry=carry_info,
-                      quotes=quotes_info,
-                      groups=fxmm_groups)
+        cerebro = Cerebro(bars=bars_info,
+                          forecasts=forecasts_info,
+                          carry=carry_info,
+                          quotes=quotes_info,
+                          groups=fxmm_groups)
 
-    portfolio_df = cerebro.run_backtest(instruments=fxmm_groups["ALL"],
-                                        bar_name="Close",
-                                        vol_window=90,
-                                        vol_target=0.1,
-                                        resample_freq="B",
-                                        capital=1000000)
+        portfolio_df = cerebro.run_backtest(instruments=fxmm_groups["ALL"],
+                                            bar_name="Close",
+                                            vol_window=90,
+                                            vol_target=0.1,
+                                            resample_freq="B",
+                                            capital=20000000)
+        
+        target_dict["portfolio"] = portfolio_df
+        output_path = os.path.join(os.getcwd(), "src", "data", "outputs", sysname, "{}.pickle".format(sysname))
+        save_pickle(obj=target_dict, path=output_path)
+    else:
+        output_path = os.path.join(os.getcwd(), "src", "data", "outputs", sysname, "{}.pickle".format(sysname))
+        target_dict = load_pickle(path=output_path)
+        portfolio_df = target_dict["portfolio"]
     
     diagnostics = Diagnostics(portfolio_df=portfolio_df)
     diagnostics.default_metrics(sysname=sysname)
     diagnostics.save_backtests(sysname=sysname)
     diagnostics.save_diagnostics(instruments=fxmm_groups["ALL"], sysname=sysname)
-
-    target_dict["portfolio"] = portfolio_df
-    output_path = os.path.join(os.getcwd(), "src", "data", "outputs", "{}.pickle".format(sysname))
-    save_pickle(obj=target_dict, path=output_path)
