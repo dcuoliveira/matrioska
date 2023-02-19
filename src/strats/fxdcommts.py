@@ -55,7 +55,7 @@ if __name__ == "__main__":
                                             vol_window=90,
                                             vol_target=0.1,
                                             resample_freq="B",
-                                            capital=20000000,
+                                            capital=35000000,
                                             reinvest=False)
 
         target_dict["portfolio"] = portfolio_df
