@@ -11,7 +11,7 @@ class Cerebro(object):
     def __init__(self,
                  bars: dict,
                  forecasts: dict,
-                 carry: dict,
+                 carry: dict or None,
                  quotes: dict,
                  groups: dict) -> None:
         self.bars = bars
@@ -20,7 +20,7 @@ class Cerebro(object):
         self.quotes = quotes
         self.groups = groups
 
-        self.metadata = pd.DataFrame.from_dict(load_pickle(path=os.path.join(os.getcwd(), "src", "data", "inputs", "metadata.pickle")))
+        self.metadata = load_pickle(path=os.path.join(os.getcwd(), "src", "data", "inputs", "metadata.pickle"))
 
         if "ALL" in list(groups.keys()):
             self.intruments = groups["ALL"]
@@ -46,7 +46,11 @@ class Cerebro(object):
 
             tmp_forecasts = self.forecasts[inst].resample(resample_freq).last().ffill()
             
-            tmp_carry = self.carry[inst][[bar_name]].resample(resample_freq).last().ffill()
+            if self.carry is None:
+                tmp_carry = tmp_forecasts.copy().rename(columns={"{} forecasts".format(inst): bar_name})
+                tmp_carry[bar_name] = 0
+            else:
+                tmp_carry = self.carry[inst][[bar_name]].resample(resample_freq).last().ffill()
 
             covert_currency_name = self.metadata.loc[self.metadata["bkt_code"] == inst]["convert_currency"].iloc[0]
             tmp_quotes = self.quotes[covert_currency_name][[bar_name]].resample(resample_freq).last().ffill()
@@ -64,6 +68,7 @@ class Cerebro(object):
         self.carrys_df = pd.concat(carrys_list, axis=1)
         self.forecasts_df = pd.concat(forecasts_list, axis=1)
         self.quotes_df = pd.concat(quotes_list, axis=1)
+        self.quotes_df = self.quotes_df.loc[:, ~self.quotes_df.columns.duplicated()].copy()
 
     def check_available_instruments(self,
                                     instruments: list,
@@ -134,17 +139,18 @@ class Cerebro(object):
                     # separate all inputs needed for the calculations
                     price_change = self.bars_df.loc[t, "{} close".format(inst)] - self.bars_df.loc[t - BDay(1), "{} close".format(inst)]
                     price = self.bars_df.loc[t, "{} close".format(inst)] 
-                    previous_capital = portfolio_df.loc[t - BDay(1), "capital"]
+                    previous_capital = capital # portfolio_df.loc[t - BDay(1), "capital"]
                     inst_daily_ret_vol = self.vols_df.loc[t, "{} daily ret % vol".format(inst)]
                     forecast = self.forecasts_df.loc[t, "{} forecasts".format(inst)]
 
                     # convert price change to local currency when needed
                     currency_to_convert = self.metadata.loc[self.metadata["bkt_code"] == inst]["convert_currency"].iloc[0]
                     convert_factor = self.quotes_df.loc[t, "{} quotes".format(currency_to_convert)]
+                    ct_size = float(self.metadata.loc[self.metadata["bkt_code"] == inst]["ct_size"].iloc[0])
 
                     # compute position vol. target in the local currency and the instrument daily vol. in the local currency as well
-                    position_vol_target = (previous_capital / len(inst)) * vol_target * (1 / np.sqrt(252))
-                    inst_daily_price_vol = price * inst_daily_ret_vol * convert_factor
+                    position_vol_target = (previous_capital / len(valid_instruments)) * vol_target * (1 / np.sqrt(252))
+                    inst_daily_price_vol = price * inst_daily_ret_vol * convert_factor * ct_size
                     position_units = forecast * position_vol_target / inst_daily_price_vol 
 
                     # save position units (e.g. cts, notional in USD etc)
@@ -174,7 +180,8 @@ class Cerebro(object):
                         # convert price change to local currency when needed
                         currency_to_convert = self.metadata.loc[self.metadata["bkt_code"] == inst]["convert_currency"].iloc[0]
                         convert_factor = self.quotes_df.loc[t, "{} quotes".format(currency_to_convert)]
-                        local_currency_change = price_change * convert_factor
+                        ct_size = float(self.metadata.loc[self.metadata["bkt_code"] == inst]["ct_size"].iloc[0])
+                        local_currency_change = price_change * convert_factor * ct_size
 
                         # compute carry differential and pay/recieve it
                         buy_sell_sign = np.sign(previos_positions_units)
