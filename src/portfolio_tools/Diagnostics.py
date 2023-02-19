@@ -17,12 +17,12 @@ class Diagnostics(object):
                         sysname):
         
         if "capital ret" in self.portfolio_df.columns:
-            tmp_portfolio_df = self.portfolio_df[["capital ret"]]
-            tmp_portfolio_df["cum ret"] = (1 + tmp_portfolio_df["capital ret"]).cumprod()
-            tmp_portfolio_df["drawdown"] = tmp_portfolio_df["cum ret"] / tmp_portfolio_df["cum ret"].cummax() - 1
-            self.sharpe = tmp_portfolio_df["capital ret"].mean() / tmp_portfolio_df["capital ret"].std() * np.sqrt(253)
-            self.drawdown_max = tmp_portfolio_df["drawdown"].min() * 100
-            self.volatility = tmp_portfolio_df["capital ret"].std() * np.sqrt(253) * 100 #annualised percent vol
+            self.portfolio_df["capital ret"] = self.portfolio_df["capital ret"] / 100
+            self.portfolio_df["cum ret"] = (1 + self.portfolio_df["capital ret"]).cumprod()
+            self.portfolio_df["drawdown"] = self.portfolio_df["cum ret"] / self.portfolio_df["cum ret"].cummax() - 1
+            self.sharpe = self.portfolio_df["capital ret"].mean() / self.portfolio_df["capital ret"].std() * np.sqrt(253)
+            self.drawdown_max = self.portfolio_df["drawdown"].min() * 100
+            self.vol_ann = self.portfolio_df["capital ret"].std() * np.sqrt(253) * 100 #annualised percent vol
 
             self.summary = "{}: \nSharpe: {} \nDrawdown: {}\nVolatility: {}\n".format(
                 sysname, round(self.sharpe, 2), round(self.drawdown_max, 2), round(self.vol_ann, 2)
@@ -69,5 +69,3 @@ class Diagnostics(object):
         plt.title("Daily Return Scatter Plot")
         plt.savefig("{}/{}_scatter.png".format(OUTPUT_PATH, sysname), bbox_inches="tight")
         plt.close()
-
-        #histogram plot, etc etc
