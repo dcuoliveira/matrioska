@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 from settings import OUTPUT_PATH
 from src.utils.conn_data import save_pickle
+from src.viz.data_viz import usdollars_format
 
 plt.style.use("bmh")
 
@@ -33,11 +34,11 @@ class Diagnostics(object):
             self.portfolio_df["cum pnl"] = self.portfolio_df["daily pnl"].cumsum()
             self.portfolio_df["drawdown"] = self.portfolio_df["cum pnl"] / self.portfolio_df["cum pnl"].cummax()
             self.money_sharpe = self.portfolio_df["daily pnl"].mean() / self.portfolio_df["daily pnl"].std() * np.sqrt(252)
-            self.money_drawdown_max = self.portfolio_df["drawdown"].min() * 100
+            self.money_drawdown_max = self.portfolio_df["drawdown"].min()
             self.money_vol_daily = self.portfolio_df["daily pnl"].std()
 
             self.money_summary = "{}: \nSharpe: {} \nDrawdown: {}\nDaily Volatility: {}\n".format(
-                sysname.upper(), round(self.money_sharpe, 2), round(self.money_drawdown_max, 1), round(self.money_vol_daily, 1)
+                sysname.upper(), round(self.money_sharpe, 2), usdollars_format(self.money_drawdown_max), usdollars_format(self.money_vol_daily)
             )    
         else:
             print('There is no columns named "daily pnl" in the "portfolio_df" object')
@@ -75,6 +76,8 @@ class Diagnostics(object):
             size="8"
         )
         plt.title("Cumulative pnl")
+        ylabels = [usdollars_format(x) for x in ax.get_yticks()]
+        ax.set_yticklabels(ylabels)
         plt.savefig("{path}/{sysname}/{sysname}_cumpnl.png".format(path=OUTPUT_PATH, sysname=sysname), bbox_inches="tight")
         plt.close()
 
@@ -97,12 +100,28 @@ class Diagnostics(object):
         plt.savefig("{path}/{sysname}/{sysname}_scatter.png".format(path=OUTPUT_PATH, sysname=sysname), bbox_inches="tight")
         plt.close()
 
-        self.portfolio_df["daily pnl"].hist(bins=50)
+        ax = sns.histplot(data=self.portfolio_df["daily pnl"], palette="deep")
+        ax.annotate(
+            "{}: \nAvg. PnL: {} \n1 Std. PnL: {}\n".format(
+                sysname.upper(), usdollars_format(self.portfolio_df["daily pnl"].mean()), usdollars_format(self.portfolio_df["daily pnl"].std())
+            ),
+            xy=(0.2, 0.8),
+            xycoords="axes fraction",
+            bbox=dict(boxstyle="round,pad=0.5", fc="white", alpha=0.3),
+            ha="center",
+            va="center",
+            family="serif",
+            size="8"
+        )
+        xlabels = [usdollars_format(x) for x in ax.get_xticks()]
+        ax.set_xticklabels(xlabels, rotation=40)
         plt.title("Daily PnL")
         plt.savefig("{path}/{sysname}/{sysname}_hist_daily_pnl.png".format(path=OUTPUT_PATH, sysname=sysname), bbox_inches="tight")
         plt.close()
 
-        self.portfolio_df["daily pnl"].rolling(window=30).std().plot()
+        ax = sns.lineplot(data=self.portfolio_df["daily pnl"].rolling(window=30).std(), linewidth=2.5, palette="deep")
+        ylabels = [usdollars_format(x) for x in ax.get_yticks()]
+        ax.set_yticklabels(ylabels)
         plt.title("Daily PnL Vol.")
         plt.savefig("{path}/{sysname}/{sysname}_daily_pnl_vol.png".format(path=OUTPUT_PATH, sysname=sysname), bbox_inches="tight")
         plt.close()

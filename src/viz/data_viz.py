@@ -7,7 +7,7 @@ import dataframe_image as dfi
 from statsmodels.tsa.stattools import ccf
 import statsmodels.api as sm
  
-from src.settings import OUTPUTS_PATH
+from settings import OUTPUT_PATH
  
 plt.style.use('bmh')
  
@@ -149,7 +149,7 @@ def plot_multiaxis(data,
                    labels_col = "Use column name",
                    annotate=False,
                    save_fig = False,
-                   path_savefig = OUTPUTS_PATH,
+                   path_savefig = OUTPUT_PATH,
                    filename = "fig1"):
  
     fig, ax_orig = plt.subplots(figsize=(15, 10))
@@ -246,7 +246,7 @@ def plot_ts_heatmap(df,
     plt.ylabel('')
     title = title.upper()
     plt.title(title, loc='left')
-    plt.savefig(OUTPUTS_PATH + "\\"+ folder_name + "\\"+ title + '.jpg', dpi = size)
+    plt.savefig(OUTPUT_PATH + "\\"+ folder_name + "\\"+ title + '.jpg', dpi = size)
  
  
 def plot_hist_compare_two_money_axis(df):
@@ -412,9 +412,3 @@ def plot_acf_pacf(series: pd.Series, lag: int):
     fig = sm.graphics.tsa.plot_pacf(series, lags=lag, ax=ax2)
  
     return plt.show()
-
-Corporativo | Interno
-
-"Esta mensagem e reservada e sua divulgacao, distribuicao, reproducao ou qualquer forma de uso e proibida e depende de previa autorizacao desta instituicao. O remetente utiliza o correio eletronico no exercicio do seu trabalho ou em razao dele, eximindo esta instituicao de qualquer responsabilidade por utilizacao indevida. Se voce recebeu esta mensagem por engano, favor elimina-la imediatamente."
-
-"This message is reserved and its disclosure, distribution, reproduction or any other form of use is prohibited and shall depend upon previous proper authorization. The sender uses the electronic mail in the exercise of his/her work or by virtue thereof, and the institution takes no liability for its undue use. If you have received this e-mail by mistake, please delete it immediately."

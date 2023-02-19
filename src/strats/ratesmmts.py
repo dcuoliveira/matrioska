@@ -31,10 +31,10 @@ if __name__ == "__main__":
         for inst in ratesmm_groups["ALL"]:
             tmp_signals = signals_info[inst].resample("B").last().ffill().mean(axis=1)
 
-            # zscore
-            tmp_signals = (tmp_signals - tmp_signals.rolling(window=252).mean()) / tmp_signals.rolling(window=252).std()
+            # # zscore
+            # tmp_signals = (tmp_signals - tmp_signals.rolling(window=252).mean()) / tmp_signals.rolling(window=252).std()
 
-            tmp_forecasts = pd.DataFrame(np.where(tmp_signals > 0.5, tmp_signals, np.where(tmp_signals < -0.5, tmp_signals, 0)),
+            tmp_forecasts = pd.DataFrame(np.where(tmp_signals > 0, 1, np.where(tmp_signals < 0, -1, 0)),
                                         columns=["{} forecasts".format(inst)],
                                         index=tmp_signals.index)
             forecasts_info[inst] = tmp_forecasts
