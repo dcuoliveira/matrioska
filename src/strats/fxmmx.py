@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 
 from src.portfolio_tools.Cerebro import Cerebro
+from src.portfolio_tools.Diagnostics import Diagnostics
 from src.utils.conn_data import load_pickle, save_pickle
 
 G10 = ["USDEUR", "USDJPY", "USDAUD", "USDNZD", "USDCAD", "USDGBP", "USDCHF", "USDSEK", "USDNOK"]
@@ -67,6 +68,11 @@ if __name__ == "__main__":
                                         vol_target=0.1,
                                         resample_freq="B",
                                         capital=1000000)
+    
+    diagnostics = Diagnostics(portfolio_df=portfolio_df)
+    diagnostics.default_metrics(sysname=sysname)
+    diagnostics.save_backtests(sysname=sysname)
+    diagnostics.save_diagnostics(instruments=fxmm_groups["ALL"], sysname=sysname)
 
     target_dict["portfolio"] = portfolio_df
     output_path = os.path.join(os.getcwd(), "src", "data", "outputs", "{}.pickle".format(sysname))
