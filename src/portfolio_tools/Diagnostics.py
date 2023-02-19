@@ -24,7 +24,7 @@ class Diagnostics(object):
             self.drawdown_max = self.portfolio_df["drawdown"].min() * 100
             self.vol_ann = self.portfolio_df["capital ret"].std() * np.sqrt(252) * 100
 
-            self.summary = "{}: \nSharpe: {} \nDrawdown: {}\nVolatility: {}\n".format(
+            self.summary = "{}: \nSharpe: {} \nDrawdown: {} \nVolatility: {} \n".format(
                 sysname.upper(), round(self.sharpe, 2), round(self.drawdown_max, 1), round(self.vol_ann, 1)
             )    
         else:
@@ -32,13 +32,13 @@ class Diagnostics(object):
 
         if "daily pnl" in self.portfolio_df.columns:
             self.portfolio_df["cum pnl"] = self.portfolio_df["daily pnl"].cumsum()
-            self.portfolio_df["drawdown"] = self.portfolio_df["cum pnl"] / self.portfolio_df["cum pnl"].cummax()
+            # self.portfolio_df["drawdown"] = self.portfolio_df["cum pnl"] / self.portfolio_df["cum pnl"].cummax()
             self.money_sharpe = self.portfolio_df["daily pnl"].mean() / self.portfolio_df["daily pnl"].std() * np.sqrt(252)
-            self.money_drawdown_max = self.portfolio_df["drawdown"].replace(np.inf, np.nan).replace(-np.inf, np.nan).min()
+            # self.money_drawdown_max = self.portfolio_df["drawdown"].replace(np.inf, np.nan).replace(-np.inf, np.nan).min()
             self.money_vol_daily = self.portfolio_df["daily pnl"].std()
 
-            self.money_summary = "{}: \nSharpe: {} \nDrawdown: {}\nDaily Volatility: {}\n".format(
-                sysname.upper(), round(self.money_sharpe, 2), usdollars_format(self.money_drawdown_max), usdollars_format(self.money_vol_daily)
+            self.money_summary = "{}: \nSharpe: {} \nDaily Mean: {} \nDaily Volatility: {} \n".format(
+                sysname.upper(), round(self.money_sharpe, 2), usdollars_format(self.portfolio_df["daily pnl"].mean()), usdollars_format(self.money_vol_daily)
             )    
         else:
             print('There is no columns named "daily pnl" in the "portfolio_df" object')
