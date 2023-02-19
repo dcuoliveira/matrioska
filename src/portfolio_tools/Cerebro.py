@@ -87,7 +87,9 @@ class Cerebro(object):
             check5 = current_dt in rets_df.loc[:, "{} ret%".format(inst)].dropna().index
             check6 = current_dt in carrys_df.loc[:, "{} carry".format(inst)].dropna().index
 
-            if check1 and check2 and check3 and check4 and check5 and check6:
+            check7 = forecasts_df.loc[current_dt, "{} forecasts".format(inst)] != 0
+
+            if check1 and check2 and check3 and check4 and check5 and check6 and check7:
                 valid_instruments.append(inst)
 
         return valid_instruments
@@ -150,21 +152,24 @@ class Cerebro(object):
 
                     # compute position vol. target in the local currency and the instrument daily vol. in the local currency as well
                     position_vol_target = (previous_capital / len(valid_instruments)) * vol_target * (1 / np.sqrt(252))
-                    inst_daily_price_vol = price * inst_daily_ret_vol * convert_factor * ct_size
+                    inst_daily_price_vol = price * convert_factor * inst_daily_ret_vol * ct_size
                     position_units = forecast * position_vol_target / inst_daily_price_vol 
 
                     # save position units (e.g. cts, notional in USD etc)
                     portfolio_df.loc[t, "{} position units".format(inst)] = position_units
-                    nominal_total += abs(position_units * self.bars_df.loc[t, "{} close".format(inst)])
+                    nominal_total += abs(position_units * price * convert_factor)
 
             if not first_day:
 
                 # compute instrument weight exposure (we are going to use them below to compute nominal return)
                 for inst in valid_instruments:
+                    currency_to_convert = self.metadata.loc[self.metadata["bkt_code"] == inst]["convert_currency"].iloc[0]
+
                     previous_price = self.bars_df.loc[t - BDay(1), "{} close".format(inst)]
+                    previous_convert_factor = self.quotes_df.loc[t - BDay(1), "{} quotes".format(currency_to_convert)]
                     position_units = portfolio_df.loc[t, "{} position units".format(inst)]
 
-                    nominal_inst = position_units * previous_price
+                    nominal_inst = position_units * previous_price * previous_convert_factor
                     inst_w = nominal_inst / nominal_total if nominal_total != 0 else 0
                     portfolio_df.loc[t, "{} w".format(inst)] = inst_w
 
