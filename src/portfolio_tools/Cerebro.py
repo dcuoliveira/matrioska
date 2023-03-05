@@ -6,26 +6,25 @@ from pandas.tseries.offsets import BDay
 import os
 
 from src.utils.conn_data import load_pickle, save_pickle
+from settings import INPUT_PATH
 
 class Cerebro(object):
     def __init__(self,
-                 bars: dict,
-                 forecasts: dict,
-                 carry: dict or None,
-                 quotes: dict,
-                 groups: dict) -> None:
-        self.bars = bars
-        self.forecasts = forecasts
-        self.carry = carry
-        self.quotes = quotes
-        self.groups = groups
+                 strat_metadata: classmethod) -> None:
+        self.bars = strat_metadata.bars_info
+        self.forecasts = strat_metadata.forecasts_info
+        self.carry = strat_metadata.carry_info
+        self.quotes = load_pickle(os.path.join(INPUT_PATH, "quotes.pickle"))
 
-        self.metadata = load_pickle(path=os.path.join(os.getcwd(), "src", "data", "inputs", "metadata.pickle"))
+        # TODO: generalizar dicionario
+        self.groups = {"ALL": strat_metadata.instruments}
 
-        if "ALL" in list(groups.keys()):
-            self.intruments = groups["ALL"]
+        self.metadata = load_pickle(path=os.path.join(INPUT_PATH, "metadata.pickle"))
+
+        if "ALL" in list(self.groups.keys()):
+            self.intruments = self.groups["ALL"]
         else:
-            self.intruments = groups[list(groups.keys())[0]]
+            self.intruments = self.groups[list(self.groups.keys())[0]]
 
     def standardize_inputs(self,
                            bar_name: str,
