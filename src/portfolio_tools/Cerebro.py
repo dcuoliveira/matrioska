@@ -127,7 +127,7 @@ class Cerebro(object):
                                                                      self.rets_df)
 
             if len(valid_instruments) == 0:
-                portfolio_df.loc[t, "capital"] = portfolio_df.loc[t - BDay(1), "capital"]
+                portfolio_df.loc[t, "capital"] = portfolio_df.loc[t - BDay(1), "capital"] if reinvest else capital
 
             # compute vol. adjusted positions from forecasts and total nominal exposure
             nominal_total = 0
