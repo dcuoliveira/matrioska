@@ -60,7 +60,7 @@ class fxmmxs:
 USE_LAST_DATA = False
 
 if __name__ == "__main__":
-    strat_metadata = fxmmts(simulation_start=None, vol_target=0.2)
+    strat_metadata = fxmmxs(simulation_start=None, vol_target=0.2)
 
     if not USE_LAST_DATA:
         cerebro = Cerebro(strat_metadata=strat_metadata)
