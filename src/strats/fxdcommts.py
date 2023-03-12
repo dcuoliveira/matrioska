@@ -48,7 +48,6 @@ class fxdcommts:
         
         return forecasts_info
 
-
 USE_LAST_DATA = True
 
 if __name__ == "__main__":
